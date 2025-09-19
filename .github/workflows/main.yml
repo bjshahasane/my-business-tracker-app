@@ -1,0 +1,43 @@
+name: Sync to Public Repo
+
+on:
+  push:
+    branches:
+      - msa-b1   # trigger only when msa-b1 is updated
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code (full history)
+        uses: actions/checkout@v3
+        with:
+          ref: msa-b1
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Show repo state
+        run: |
+          echo "== Branches =="
+          git branch -a
+          echo "== Last commit =="
+          git log -1 --oneline
+          echo "== Repo contents =="
+          ls -la
+
+      - name: Push msa-b1 → main (public repo)
+        env:
+          TOKEN: ${{ secrets.MY_BUSINESS_APP_REPO_TOKEN }}
+        run: |
+          git remote remove public || true
+          git remote add public https://x-access-token:${TOKEN}@github.com/bjshahasane/my-business-tracker-app.git
+          echo "== Remotes =="
+          git remote -v
+          echo "== Pushing msa-b1 → main on public repo =="
+          git push --force public HEAD:main
