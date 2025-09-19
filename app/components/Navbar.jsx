@@ -6,7 +6,7 @@ const navLinks = [
   { name: 'Dashboard', href: '/pages/dashboard' },
   { name: 'Products', href: '/pages/productCatalogue' },
   { name: 'Orders', href: '/pages/orders' },
-  { name: 'Products to Make', href: '/pages/productsToMake' },
+  { name: 'Product to Make', href: '/pages/productsToMake' },
   { name: 'Expenses', href: '/pages/expenses' },
 ];
 
