@@ -63,7 +63,7 @@ const PendingProductsPage = () => {
   //     setToast({ show: true, message: 'Update failed' });
   //   }
   // };
-  
+
   // 🔸 Group products by category
   const groupedByType = products.reduce((acc, prod) => {
     const type = prod.type || 'Uncategorized';
@@ -72,7 +72,7 @@ const PendingProductsPage = () => {
     return acc;
   }, {});
 
-  console.log("This is products",products);
+  console.log("This is products", products);
 
   return (
     <Container className="mt-5">
@@ -86,7 +86,12 @@ const PendingProductsPage = () => {
         ) : products.length === 0 ? (
           <p className="text-muted">No products to display.</p>
         ) : (
-          Object.entries(groupedByType).map(([type, items]) => (
+          Object.entries(groupedByType)
+  .filter(([_, items]) =>
+    items.some(prod => prod.pendingQuantity > 0)
+  )
+  .map(([type, items]) => (
+
             <div key={type} className="mb-5">
               <h5 className="mb-3 fw-bold text-uppercase text-secondary border-bottom pb-1">
                 {type}
@@ -103,21 +108,24 @@ const PendingProductsPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((prod, index) => (
-                    <tr key={prod._id}>
-                      <td>{index + 1}</td>
-                      <td className="fw-bold">{prod.name}</td>
-                      <td>
-                        <Badge bg="warning" pill>
-                          {prod.pendingQuantity}
-                        </Badge>
-                      </td>
-                      {/* <td>
+                  {items
+                    .filter(prod => prod.pendingQuantity > 0)
+                    .map((prod, index) => (
+
+                      <tr key={prod._id}>
+                        <td>{index + 1}</td>
+                        <td className="fw-bold">{prod.name}</td>
+                        <td>
+                          <Badge bg="warning" pill>
+                            {prod.pendingQuantity}
+                          </Badge>
+                        </td>
+                        {/* <td>
                         <Badge bg="success" pill>
                           {prod.completedQuantity}
                         </Badge>
                       </td> */}
-                      {/* <td>
+                        {/* <td>
                         <div className="d-flex justify-content-center gap-2 flex-wrap">
                           <Button
                             size="sm"
@@ -159,8 +167,8 @@ const PendingProductsPage = () => {
                           </Button>
                         </div>
                       </td> */}
-                    </tr>
-                  ))}
+                      </tr>
+                    ))}
                 </tbody>
               </Table>
             </div>

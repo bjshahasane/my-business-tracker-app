@@ -18,7 +18,7 @@ const DashboardPage = () => {
 
   const fetchOrders = async () => {
     const res = await axios.get('/api/orders');
-    setOrders(res.data);
+    setOrders(res.data.data);
   };
 
   const fetchProfitData = async () => {

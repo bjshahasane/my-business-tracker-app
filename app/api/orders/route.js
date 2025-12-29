@@ -3,11 +3,67 @@ import orders from '@/app/models/Orders';
 import { NextResponse } from 'next/server';
 import ProductionProduct from '@/app/models/ProductionProduct';
 
-export async function GET() {
-  await connectMongoDB();
-  const orderP = await orders.find().sort({ date: -1 });
-  return NextResponse.json(orderP);
+// export async function GET() {
+//   await connectMongoDB();
+//   const orderP = await orders.find().sort({ date: -1 });
+//   return NextResponse.json(orderP);
+// }
+
+export async function GET(req) {
+  try {
+    await connectMongoDB();
+
+    const { searchParams } = new URL(req.url);
+
+    const page = searchParams.get('page');
+    const limit = searchParams.get('limit');
+
+    // -----------------------------
+    // NO PAGINATION (default)
+    // -----------------------------
+    if (!page && !limit) {
+      const orderP = await orders.find().sort({ date: -1 });
+
+      return NextResponse.json({
+        data: orderP,
+        pagination: null,
+      });
+    }
+
+    // -----------------------------
+    // PAGINATED RESPONSE
+    // -----------------------------
+    const pageNumber = parseInt(page) || 1;
+    const limitNumber = parseInt(limit) || 5;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const totalOrders = await orders.countDocuments();
+
+    const orderP = await orders
+      .find()
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limitNumber);
+
+    return NextResponse.json({
+      data: orderP,
+      pagination: {
+        totalOrders,
+        currentPage: pageNumber,
+        totalPages: Math.ceil(totalOrders / limitNumber),
+        limit: limitNumber,
+      },
+    });
+
+  } catch (error) {
+    console.error("GET Orders Error:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch orders" },
+      { status: 500 }
+    );
+  }
 }
+
 
 export async function POST(req) {
   try {

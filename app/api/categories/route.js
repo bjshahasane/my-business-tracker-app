@@ -74,34 +74,87 @@ export async function PUT(req) {
   }
 }
 
-// ADD Product to Category
+// ADD or EDIT Product in Category
 export async function PATCH(req) {
   try {
     await connectMongoDB();
-    const { _id, name, price } = await req.json();
+    const { _id, productId, name, price } = await req.json();
 
     const cat = await Category.findById(_id);
     if (!cat) {
-      return NextResponse.json({ message: "Category not found" }, { status: 404 });
+      return NextResponse.json(
+        { message: "Category not found" },
+        { status: 404 }
+      );
     }
 
+    // ------------------------------------
+    // ✔ EDIT PRODUCT (only changed fields)
+    // ------------------------------------
+    if (productId) {
+      const index = cat.itemList.findIndex((item) => item.id === productId);
+
+      if (index === -1) {
+        return NextResponse.json(
+          { message: "Product not found" },
+          { status: 404 }
+        );
+      }
+
+      const product = cat.itemList[index];
+      let updated = false;
+
+      // Update only if name changed
+      if (name !== undefined && name !== product.name) {
+        product.name = name;
+        updated = true;
+      }
+
+      // Update only if price changed
+      if (price !== undefined && price !== product.price) {
+        product.price = price;
+        updated = true;
+      }
+
+      if (updated) {
+        await cat.save();
+      }
+
+      return NextResponse.json(
+        {
+          message: updated ? "Product updated" : "No changes detected",
+          category: cat,
+        },
+        { status: 200 }
+      );
+    }
+
+    // ------------------------------------
+    // ✔ ADD NEW PRODUCT
+    // ------------------------------------
     const newProduct = {
       id: generateProductId(cat.category),
       name,
-      price
+      price,
     };
 
     cat.itemList.push(newProduct);
     await cat.save();
 
-    console.log("Updated category:", cat); // ✅ Debug log
+    return NextResponse.json(
+      { message: "Product added", category: cat },
+      { status: 200 }
+    );
 
-    return NextResponse.json(cat, { status: 200 });
   } catch (error) {
     console.error("PATCH error:", error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
+
 
 
 // DELETE Category OR Product

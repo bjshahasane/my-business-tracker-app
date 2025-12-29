@@ -7,6 +7,8 @@ import { Table, Container, Badge, Tooltip, OverlayTrigger, Toast, Row, Col } fro
 import OrderFormModal from '../../components/OrderFormModal';
 import axios from 'axios';
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import Pagination from 'react-bootstrap/Pagination';
+
 
 const initialValue = {
   customerName: '',
@@ -28,18 +30,32 @@ const Orders = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '' });
+  const [currentPage, setCurrentPage] = useState(1);
+const [totalPages, setTotalPages] = useState(1);
+const itemsPerPage = 5;
+
+const fetchOrders = async (page = 1) => {
+  const res = await fetch(
+    `/api/orders?page=${page}&limit=${itemsPerPage}`
+  );
+
+  const result = await res.json();
+
+  setOrders(result.data);
+  setTotalPages(result.pagination.totalPages);
+};
 
   const flatProductList = productCatalogue.flatMap(group => group.itemList);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+ useEffect(() => {
+  fetchOrders(currentPage);
+}, [currentPage]);
 
-  const fetchOrders = async () => {
-    const res = await fetch('/api/orders');
-    const data = await res.json();
-    setOrders(data);
-  };
+  // const fetchOrders = async () => {
+  //   const res = await fetch('/api/orders');
+  //   const data = await res.json();
+  //   setOrders(data);
+  // };
 
   const handleDelete = async (_id) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this order?");
@@ -162,6 +178,30 @@ const Orders = () => {
           <p>Click "New Order" to add your first order.</p>
         </div>
       )}
+
+{totalPages > 1 && (
+  <Pagination className="justify-content-center mt-4">
+    <Pagination.Prev
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage(p => p - 1)}
+    />
+
+    {[...Array(totalPages)].map((_, i) => (
+      <Pagination.Item
+        key={i}
+        active={currentPage === i + 1}
+        onClick={() => setCurrentPage(i + 1)}
+      >
+        {i + 1}
+      </Pagination.Item>
+    ))}
+
+    <Pagination.Next
+      disabled={currentPage === totalPages}
+      onClick={() => setCurrentPage(p => p + 1)}
+    />
+  </Pagination>
+)}
 
       <OrderFormModal
         show={showModal}

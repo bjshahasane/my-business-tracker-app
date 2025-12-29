@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Container, Button,
-  Card, CardBody  , CardTitle, Form,FormControl,FormLabel, FormGroup, Table, 
-  Modal, ModalTitle,ModalBody, ModalHeader, ModalFooter } from "react-bootstrap";
+import {
+  Container, Button,
+  Card, CardBody, CardTitle, Form, FormControl, FormLabel, FormGroup, Table,
+  Modal, ModalTitle, ModalBody, ModalHeader, ModalFooter
+} from "react-bootstrap";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -11,7 +13,7 @@ export default function CategoriesPage() {
   const [formData, setFormData] = useState({ type: "", category: "", itemList: [] });
   const [productForm, setProductForm] = useState({ name: "", price: "" });
   const [selectedCategory, setSelectedCategory] = useState(null);
-
+  const [editingProductId, setEditingProductId] = useState(null);
   // Fetch categories
   const fetchCategories = async () => {
     const res = await fetch("/api/categories");
@@ -35,6 +37,7 @@ export default function CategoriesPage() {
     fetchCategories();
   };
 
+
   // Add Product
   const handleAddProduct = async () => {
     // if (!selectedCategory) return;
@@ -46,6 +49,9 @@ export default function CategoriesPage() {
     };
 
 
+    if (editingProductId) {
+      updated.productId = editingProductId;
+    }
 
     await fetch("/api/categories", {
       method: "PATCH",
@@ -57,6 +63,24 @@ export default function CategoriesPage() {
     setProductForm({ name: "", price: "" });
     fetchCategories();
   };
+
+  // Edit Product
+  const EditProduct = (catId, productId) => {
+    setSelectedCategory({ _id: catId });
+    setEditingProductId(productId);
+    const product = categories
+      .find(c => c._id === catId)
+      .itemList.find(p => p.id === productId);
+
+    setProductForm({
+      name: product.name,
+      price: product.price
+    });
+
+    setShowProductModal(true);
+  };
+
+
 
 
   // Delete Product
@@ -121,6 +145,13 @@ export default function CategoriesPage() {
                       <td>{p.name}</td>
                       <td>₹{p.price}</td>
                       <td>
+                        <Button
+                          size="sm"
+                          variant="warning"
+                          onClick={() => { EditProduct(cat._id, p.id); }}
+                        >
+                          Edit
+                        </Button>
                         <Button
                           size="sm"
                           variant="danger"
@@ -194,6 +225,6 @@ export default function CategoriesPage() {
           <Button onClick={handleAddProduct}>Save</Button>
         </ModalFooter>
       </Modal>
-    </Container>
+    </Container >
   );
 }
