@@ -8,6 +8,7 @@ import OrderFormModal from '../../components/OrderFormModal';
 import axios from 'axios';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import Pagination from 'react-bootstrap/Pagination';
+import Spinner from 'react-bootstrap/Spinner';
 
 
 const initialValue = {
@@ -31,25 +32,36 @@ const Orders = () => {
   const [editingId, setEditingId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '' });
   const [currentPage, setCurrentPage] = useState(1);
-const [totalPages, setTotalPages] = useState(1);
-const itemsPerPage = 5;
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-const fetchOrders = async (page = 1) => {
-  const res = await fetch(
-    `/api/orders?page=${page}&limit=${itemsPerPage}`
-  );
+  const itemsPerPage = 5;
 
-  const result = await res.json();
+  const fetchOrders = async (page = 1) => {
+    try {
+      setLoading(true);
 
-  setOrders(result.data);
-  setTotalPages(result.pagination.totalPages);
-};
+      const res = await fetch(
+        `/api/orders?page=${page}&limit=${itemsPerPage}`
+      );
+
+      const result = await res.json();
+
+      setOrders(result.data || []);
+      setTotalPages(result.pagination?.totalPages || 1);
+    } catch (error) {
+      console.error('Fetch orders error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const flatProductList = productCatalogue.flatMap(group => group.itemList);
 
- useEffect(() => {
-  fetchOrders(currentPage);
-}, [currentPage]);
+  useEffect(() => {
+    fetchOrders(currentPage);
+  }, [currentPage]);
 
   // const fetchOrders = async () => {
   //   const res = await fetch('/api/orders');
@@ -118,7 +130,16 @@ const fetchOrders = async (page = 1) => {
         </Col>
       </Row>
 
-      {orders.length > 0 ? (
+      {loading ? (
+        <div
+          className="d-flex flex-column justify-content-center align-items-center"
+          style={{ minHeight: '50vh' }}
+        >
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-3 text-muted">Loading orders...</p>
+        </div>
+      ) : orders.length > 0 ? (
+
         <Table bordered striped responsive hover>
           <thead className="table-dark">
             <tr>
@@ -179,29 +200,30 @@ const fetchOrders = async (page = 1) => {
         </div>
       )}
 
-{totalPages > 1 && (
-  <Pagination className="justify-content-center mt-4">
-    <Pagination.Prev
-      disabled={currentPage === 1}
-      onClick={() => setCurrentPage(p => p - 1)}
-    />
+      {totalPages > 1 && (
+        <Pagination className="justify-content-center mt-4">
+          <Pagination.Prev
+            disabled={loading || currentPage === 1}
+            onClick={() => setCurrentPage(p => p - 1)}
+          />
 
-    {[...Array(totalPages)].map((_, i) => (
-      <Pagination.Item
-        key={i}
-        active={currentPage === i + 1}
-        onClick={() => setCurrentPage(i + 1)}
-      >
-        {i + 1}
-      </Pagination.Item>
-    ))}
 
-    <Pagination.Next
-      disabled={currentPage === totalPages}
-      onClick={() => setCurrentPage(p => p + 1)}
-    />
-  </Pagination>
-)}
+          {[...Array(totalPages)].map((_, i) => (
+            <Pagination.Item
+              key={i}
+              active={currentPage === i + 1}
+              onClick={() => setCurrentPage(i + 1)}
+            >
+              {i + 1}
+            </Pagination.Item>
+          ))}
+
+          <Pagination.Next
+            disabled={loading || currentPage === totalPages}
+            onClick={() => setCurrentPage(p => p + 1)}
+          />
+        </Pagination>
+      )}
 
       <OrderFormModal
         show={showModal}

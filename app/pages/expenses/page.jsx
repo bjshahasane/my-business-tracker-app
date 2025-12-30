@@ -1,22 +1,31 @@
 'use client';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Toast,ToastBody } from 'react-bootstrap';
+import { Toast, ToastBody } from 'react-bootstrap';
+import Spinner from 'react-bootstrap/Spinner';
 
 const ExpensesPage = () => {
   const [expenses, setExpenses] = useState([]);
   const [form, setForm] = useState({ title: '', amount: '', date: '', category: '' });
   const [toast, setToast] = useState({ show: false, message: '' });
-
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchExpenses();
   }, []);
 
   const fetchExpenses = async () => {
-    const res = await axios.get('/api/expenses');
-    setExpenses(res.data);
+    try {
+      setLoading(true);
+      const res = await axios.get('/api/expenses');
+      setExpenses(res.data || []);
+    } catch (error) {
+      console.error('Fetch expenses error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,9 +47,9 @@ const ExpensesPage = () => {
     if (!confirmDelete) return; // If user clicks Cancel, stop here
 
     try {
-     const res =  await fetch('/api/expenses', {
+      const res = await fetch('/api/expenses', {
         method: 'DELETE',
-         headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ _id }) // Send _id in body
       });
 
@@ -68,22 +77,22 @@ const ExpensesPage = () => {
 
   return (
     <div className="p-4">
-           <Toast
-              show={toast.show}
-              onClose={() => setToast({ show: false, message: '' })}
-              delay={3000}
-              autohide
-              style={{
-                position: 'fixed',
-                bottom: 20,
-                right: 20,
-                minWidth: '250px',
-                backgroundColor: '#198754',
-                color: 'white',
-              }}
-            >
-              <ToastBody>{toast.message}</ToastBody>
-            </Toast>
+      <Toast
+        show={toast.show}
+        onClose={() => setToast({ show: false, message: '' })}
+        delay={3000}
+        autohide
+        style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          minWidth: '250px',
+          backgroundColor: '#198754',
+          color: 'white',
+        }}
+      >
+        <ToastBody>{toast.message}</ToastBody>
+      </Toast>
       <h2 className="mb-4">💸 Expense Tracker</h2>
 
       <div className="mb-4">
@@ -123,9 +132,10 @@ const ExpensesPage = () => {
             onChange={handleChange}
             className="form-control w-auto"
           />
-          <button type="submit" className="btn btn-primary">
-            Add
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Please wait...' : 'Add'}
           </button>
+
         </form>
       </div>
 
@@ -144,23 +154,44 @@ const ExpensesPage = () => {
           </tr>
         </thead>
         <tbody>
-          {expenses.map(exp => (
-            <tr key={exp._id}>
-              <td>{new Date(exp.date).toLocaleDateString()}</td>
-              <td>{exp.title}</td>
-              <td>₹ {exp.amount}</td>
-              <td>{exp.category}</td>
-              <td>
-                <button
-                  onClick={() => handleDelete(exp._id)}
-                  className="btn btn-danger btn-sm"
+          {loading ? (
+            <tr>
+              <td colSpan="5">
+                <div
+                  className="d-flex flex-column justify-content-center align-items-center"
+                  style={{ minHeight: '200px' }}
                 >
-                  ❌ Delete
-                </button>
+                  <Spinner animation="border" variant="primary" />
+                  <span className="mt-2 text-muted">Loading expenses...</span>
+                </div>
               </td>
             </tr>
-          ))}
+          ) : expenses.length > 0 ? (
+            expenses.map(exp => (
+              <tr key={exp._id}>
+                <td>{new Date(exp.date).toLocaleDateString()}</td>
+                <td>{exp.title}</td>
+                <td>₹ {exp.amount}</td>
+                <td>{exp.category}</td>
+                <td>
+                  <button
+                    onClick={() => handleDelete(exp._id)}
+                    className="btn btn-danger btn-sm"
+                  >
+                    ❌ Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" className="text-center text-muted">
+                No expenses found
+              </td>
+            </tr>
+          )}
         </tbody>
+
       </table>
     </div>
   );

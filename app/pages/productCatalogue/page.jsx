@@ -5,6 +5,8 @@ import {
   Card, CardBody, CardTitle, Form, FormControl, FormLabel, FormGroup, Table,
   Modal, ModalTitle, ModalBody, ModalHeader, ModalFooter
 } from "react-bootstrap";
+import Spinner from "react-bootstrap/Spinner";
+
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -14,12 +16,22 @@ export default function CategoriesPage() {
   const [productForm, setProductForm] = useState({ name: "", price: "" });
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   // Fetch categories
   const fetchCategories = async () => {
-    const res = await fetch("/api/categories");
-    const data = await res.json();
-    setCategories(data);
+    try {
+      setLoading(true);
+      const res = await fetch("/api/categories");
+      const data = await res.json();
+      setCategories(data || []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   useEffect(() => {
     fetchCategories();
@@ -111,63 +123,79 @@ export default function CategoriesPage() {
       <Button onClick={() => setShowCategoryModal(true)}>+ Add Category</Button>
 
       <div className="mt-4">
-        {categories.map((cat) => (
-          <Card key={cat._id} className="mb-3">
-            <CardBody>
-              <CardTitle>{cat.category} <small>({cat.type})</small></CardTitle>
-              <Button
-                size="sm"
-                variant="success"
-                onClick={() => {
-                  setSelectedCategory(cat);
-                  setShowProductModal(true);
-                }}
-              >
-                + Add Product
-              </Button>{" "}
-              <Button size="sm" variant="danger" onClick={() => deleteCategory(cat._id)}>
-                Delete Category
-              </Button>
+        {loading ? (
+          <div
+            className="d-flex flex-column justify-content-center align-items-center"
+            style={{ minHeight: "300px" }}
+          >
+            <Spinner animation="border" variant="primary" />
+            <span className="mt-2 text-muted">Loading categories...</span>
+          </div>
+        ) : categories.length > 0 ? (
+          categories.map((cat) => (
+            <Card key={cat._id} className="mb-3">
+              <CardBody>
+                <CardTitle>
+                  {cat.category} <small>({cat.type})</small>
+                </CardTitle>
 
-              <Table striped bordered hover size="sm" className="mt-3">
-                <thead>
-                  <tr>
-                    {/* <th>ID</th> */}
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cat.itemList.map((p) => (
-                    <tr key={p.id}>
-                      {/* <td>{p.id}</td> */}
-                      <td>{p.name}</td>
-                      <td>₹{p.price}</td>
-                      <td>
-                        <Button
-                          size="sm"
-                          variant="warning"
-                          onClick={() => { EditProduct(cat._id, p.id); }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => deleteProduct(cat._id, p.id)}
-                        >
-                          Delete
-                        </Button>
-                      </td>
+                <Button
+                  size="sm"
+                  variant="success"
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setShowProductModal(true);
+                  }}
+                >
+                  + Add Product
+                </Button>{" "}
+                <Button size="sm" variant="danger" onClick={() => deleteCategory(cat._id)}>
+                  Delete Category
+                </Button>
+
+                <Table striped bordered hover size="sm" className="mt-3">
+                  <thead>
+                    <tr>
+                      {/* <th>ID</th> */}
+                      <th>Product</th>
+                      <th>Price</th>
+                      <th></th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </CardBody>
-          </Card>
-        ))}
+                  </thead>
+                  <tbody>
+                    {cat.itemList.map((p) => (
+                      <tr key={p.id}>
+                        {/* <td>{p.id}</td> */}
+                        <td>{p.name}</td>
+                        <td>₹{p.price}</td>
+                        <td>
+                          <Button
+                            size="sm"
+                            variant="warning"
+                            onClick={() => { EditProduct(cat._id, p.id); }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => deleteProduct(cat._id, p.id)}
+                          >
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </CardBody>
+            </Card>
+          ))
+        ) : (
+          <p className="text-muted text-center">No categories found</p>
+        )}
       </div>
+
 
       {/* Category Modal */}
       <Modal show={showCategoryModal} onHide={() => setShowCategoryModal(false)}>

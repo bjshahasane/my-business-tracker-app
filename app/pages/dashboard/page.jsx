@@ -11,6 +11,8 @@ import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Lege
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 const DashboardPage = () => {
+    const [loading, setLoading] = useState(true);
+  
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState('monthly');
   const [profitData, setProfitData] = useState({ totalSales: 0, totalExpenses: 0, profit: 0 });
@@ -32,10 +34,25 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-    fetchOrders();
-    fetchProfitData();
-    fetchProductData();
-  }, []);
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+
+      await Promise.all([
+        fetchOrders(),
+        fetchProfitData(),
+        fetchProductData(),
+      ]);
+
+    } catch (error) {
+      console.error('Dashboard load error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadDashboard();
+}, []);
 
   const total = orders.length;
   const fulfilled = orders.filter(o => o.isFulfilled).length;
@@ -76,6 +93,19 @@ const DashboardPage = () => {
 
     return <Bar data={data} options={options} />;
   };
+
+
+  if (loading) {
+  return (
+    <div
+      className="d-flex flex-column justify-content-center align-items-center"
+      style={{ minHeight: '70vh' }}
+    >
+      <div className="spinner-border text-primary" role="status" />
+      <p className="mt-3 text-muted">Loading dashboard data...</p>
+    </div>
+  );
+}
 
   return (
     <div className="container py-4">
